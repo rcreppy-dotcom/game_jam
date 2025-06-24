@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Island of Influence</title>
+    <script src="https://unpkg.com/jspsych@7.3.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload@1.0.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.0.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-video-button-response@1.0.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-likert@1.0.0"></script>
+    <link href="https://unpkg.com/jspsych@8.2.1/css/jspsych.css" rel="stylesheet" />
+    
+  </head>
+  <body></body>
+  <script>
+    const jsPsych = initJsPsych();
+    const timeline = [];
+
+/* preload the images*/
+var preload = {
+    type: jsPsychPreload, 
+    images: ['media/leadership_example_video.mp4','media/green_button.png','media/red_button.png' ]
+};
+timeline.push(preload)
+
+
+//Welcome
+var welcome_screen = {
+    type: jsPsychHtmlButtonResponse,
+stimulus: 
+    `
+    <div style="background-image: url('media/welcome_screen.jpg'); 
+                background-size: cover; 
+                padding: 60px; 
+                color: white;
+                text-shadow: 1px 1px 3px black;
+                border-radius: 12px;">
+      <h1>Welcome to Island of Influence</h1>
+      <p>You are about to watch some leaders in action.</p>
+      <p>Will you choose to let them stay... or send them packing?</p>
+    </div>
+  `,
+  choices: ["Begin"]
+};
+
+timeline.push(welcome_screen)
+//instructions
+var instructions = {
+    type: jsPsychHtmlButtonResponse, 
+    stimulus: `
+    <p>In this game, you will watch a leader in action, reflect on their performance, and then the power will be in your hands.</p>
+    <p>YOUR vote will decide whether they stay or are dumped from the island.</p> 
+    `,
+choices: ["Click here to continue."]
+}
+timeline.push(instructions)
+
+//Leader Video
+var leader_video = {
+//type: jsPsychVideoKeyboardResponse,
+type: jsPsychVideoButtonResponse, // needed for buttons to show up 
+stimulus: [ "media/leadership_example_video.mp4"],
+    width: 640,
+    prompt: "<p>The leader will now handle a situation. Watch carefully...</p>",
+
+
+choices: ["Continue"], //choices for the buttons 
+response_allowed_while_playing: false
+};
+timeline.push(leader_video)
+//GLS Likert Scale
+var likert_scale = [
+  "Nothing", 
+  "Very Little", 
+  "Moderate Amount", 
+  "Substantial Amount", 
+  "Extreme Amount"
+];
+
+var gls_survey = {
+  type: jsPsychSurveyLikert,
+  preamble:"<h2> How would you rate the leader? Below are some questions to help you reflect before casting your important vote. </h2>",
+  questions: [
+    {prompt: "How much did the leader contribute to the effectiveness of the task?", name: 'effectiveness', labels: likert_scale},
+    {prompt: "What degree of influence did the leader exert in determining the final outcome of the task?", name: 'effectiveness', labels: likert_scale},
+    {prompt: "How much leadership did the leader exhibit?", name: 'leadership-abstractly', labels: likert_scale},
+    {prompt: "How much control over the group's activities did the leader exhibit?", name: 'control', labels: likert_scale},
+    {prompt: "If you had to choose a leader for a new task, how willing would you be to vote for this person as the leader?", name: 'voting', labels: likert_scale},
+    {prompt: "How much did the leader encourage the contributions of other group members?", name: 'contributions', labels: likert_scale},
+    {prompt: "How much did the leader contribute to the discussion in a meaningful way?", name: 'contributions', labels: likert_scale},
+
+  ],
+  randomize_question_order: true
+};
+
+timeline.push(gls_survey)
+
+//Gossip  from the other voters 
+const tribe_yapping = {
+    type: jsPsychHtmlButtonResponse,
+stimulus: `
+    <h3>Tribe Reactions:</h3>
+    <p><strong>Alex:</strong> "They did NOT step up *side eye*"</p>
+    <p><strong>Taylor:</strong> "I liked their energy, but..."</p>
+    <p><strong>Jordan:</strong> "I'm voting them off, their vibes were offffff"</p>
+  `,
+  choices: ["Click HERE to add your input for other people to see before they cast their vote"]
+}; 
+timeline.push(tribe_yapping)
+
+var gossip_option = {
+    type: jsPsychHtmlButtonResponse,
+stimulus: `
+    <h3>Want to send a quick thought to another voter? Click on the buttons below to share your opinion, or skip this if you would like: </h3>
+  `,
+  choices: [
+    "The leader was disorganized",
+    "The leader was confident",
+    "Skip!"]
+
+}; 
+timeline.push(gossip_option)
+
+
+//Voting Screen 
+var voting_screen = {
+    type:jsPsychHtmlButtonResponse,
+    stimulus: `
+     <h2>Cast Your Vote</h2>
+     <img/src = "media/leader_pic.png" width= "300" style= "margin-bottom:20px;">
+     <p>Do you want to keep or dump this leader from the island?</p>
+    `,
+    choices: [
+        '<img src= "media/red_button.png"  width= "100"><br><span>DUMP</span>',
+        '<img src= "media/green_button.png"  width= "100"><br><span>KEEP</span>'
+    ],
+    data: {
+        task:'vote'
+    }
+};
+timeline.push(voting_screen)
+
+
+// conditional  logicf for the torch snuffing/staying
+const torchPreserved = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: `
+    <h2>Your choice is clear...</h2>
+    <img src="media/torch.png" style="width: 150px;">
+    <p><i>The leader remains in the tribe....for now.</i></p>
+  `,
+  choices: ["Continue"],
+  data: {
+     outcome: 'kept'
+     }
+};
+const torchSnuff = {
+  type: jsPsychHtmlButtonResponse,
+  stimulus: `
+    <h2>The tribe has spoken...</h2>
+    <img src="media/torch.png" id="torch" style="width: 150px; transition: opacity 2s ease;">
+    <p><i>The leader has been eliminated.</i></p>
+  `,
+  choices: ["Continue"],
+  data: {
+    outcome: 'dumped'
+  },
+  on_load: function() {
+    setTimeout(() => {
+      const torch = document.getElementById('torch');
+      if (torch) {
+        torch.style.opacity = 0;
+      }
+    }, 1000);
+  }
+};
+timeline.push({
+    timeline: [torchSnuff], 
+    conditional_function: function() {
+        return jsPsych.data.get().last(1).values()[0].response === 0;
+  }
+});
+timeline.push({
+  timeline: [torchPreserved],
+  conditional_function: function() {
+    return jsPsych.data.get().last(1).values()[0].response === 1;
+  }
+});
+
+
+
+
+
+//some conditional  logic to go here
+//IMPORTANT to rn the experiment
+jsPsych.run(timeline)
+  </script>
+</html>
